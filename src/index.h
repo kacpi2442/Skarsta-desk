@@ -102,16 +102,23 @@ const char MAIN_page[] PROGMEM = R"=====(
                 <div id="height-value" class="progress-bar" role="progressbar" style="width: 0%;"></div>
               </div>
           </div>
+          <div class="card-header">
+             <h4 class="my-0 font-weight-normal">Height (from backup sensor)</h4>
+          </div>
+          <div class="card-body">
+             <div class="progress">
+                <div id="height-value2" class="progress-bar" role="progressbar" style="width: 0%;"></div>
+              </div>
+          </div>
        </div>
       </div>
 
        <script>
           const LOCALSTORAGE_ITEM_NAME = "modes"; // identifier of the saved modes
-          const DEFAULT_MODES = ["70", "95", "120"]; // local storage will saves everything as strings and these values will be URI parameters so it is fine to not use integers
+          const DEFAULT_MODES = ["70", "95", "115"]; // local storage will saves everything as strings and these values will be URI parameters so it is fine to not use integers
           const MODE_CONTAINER_ELEMENT_ID = "mode-container"; // Note: if you change this, please also change the corresponding id in HTML element
-          const HEIGHT_VALUE_ELEMENT_ID = "height-value"; // Note: if you change this, please also change the corresponding id in HTML element
           const MIN_MODE_HEIGHT = 70;
-          const MAX_MODE_HEIGHT = 120;
+          const MAX_MODE_HEIGHT = 118;
           const BAR_OFFSET = 5; // offset for the progress bar
           
 
@@ -119,12 +126,19 @@ const char MAIN_page[] PROGMEM = R"=====(
            * Takes care of correctly setting the table height in the progess bar.
            * The height will be shown in percentage -> 100% = max height
            */ 
-          const setHeightInProgessBar = (height) => {
-             let progessBar = document.getElementById(HEIGHT_VALUE_ELEMENT_ID);
+          const setHeightInProgessBar = (height, height2) => {
+             let progessBar = document.getElementById("height-value");
+             let progessBar2 = document.getElementById("height-value2");
              // add decimal point to the height
              height = parseFloat(height/10).toFixed(1);
              progessBar.innerHTML = height + " cm"; // add text to the progress bar
              progessBar.style.width = (((height - MIN_MODE_HEIGHT + BAR_OFFSET) / (MAX_MODE_HEIGHT - MIN_MODE_HEIGHT + BAR_OFFSET)) * 100) + "%"; // set progress by calculating the percentage of the current height
+               // if the second height is given, then also set it in the second progress bar
+               if (height2) {
+                  height2 = parseFloat(height2/10).toFixed(1);
+                  progessBar2.innerHTML = height2 + " cm"; // add text to the second progress bar
+                  progessBar2.style.width = (((height2 - MIN_MODE_HEIGHT + BAR_OFFSET) / (MAX_MODE_HEIGHT - MIN_MODE_HEIGHT + BAR_OFFSET)) * 100) + "%"; // set progress by calculating the percentage of the current height
+               } 
           }
 
 
@@ -137,7 +151,13 @@ const char MAIN_page[] PROGMEM = R"=====(
              // is fired when readyState property changes
              request.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) { // readyState 4 = DONE, see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
-                   setHeightInProgessBar(this.responseText);
+                //String response = "{\"tofHeight\":" + String(tofHeight) + ", \"rcwlHeight\":" + String(rcwlHeight) + "}";
+                   //setHeightInProgessBar(this.responseText);
+                     let response = JSON.parse(this.responseText); // parse the JSON response
+                     let tofHeight = response.tofHeight; // get the TOF height
+                     let rcwlHeight = response.rcwlHeight; // get the RCWL height
+                     // set the height in the progress bar
+                     setHeightInProgessBar(tofHeight, rcwlHeight);
                 }
              };
              request.open("GET", "height", true);
